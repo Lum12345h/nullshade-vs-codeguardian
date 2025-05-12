@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Nullshade vs CodeGuardian</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background-color: #000;
+      font-family: 'Courier New', monospace;
+      color: #00ffcc;
+      overflow: hidden;
+    }
+
+    .container {
+      padding: 30px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-shadow: 0 0 10px red;
+      margin-bottom: 20px;
+      animation: flicker 2s infinite alternate;
+    }
+
+    #story {
+      width: 80%;
+      margin: 0 auto;
+      font-size: 1.2rem;
+      min-height: 180px;
+      white-space: pre-wrap;
+      border: 2px solid #00ffcc;
+      padding: 20px;
+      background-color: #001111;
+      box-shadow: 0 0 20px #00ffcc;
+      overflow-y: auto;
+      animation: pulse-border 2s infinite;
+    }
+
+    #images {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 20px;
+      align-items: center;
+    }
+
+    .character-img {
+      height: 200px;
+      transition: transform 1s ease;
+      filter: drop-shadow(0 0 20px #00ffff);
+    }
+
+    .character-img:hover {
+      transform: scale(1.1) rotate(2deg);
+    }
+
+    #restore-button {
+      margin-top: 30px;
+      background-color: #00ffcc;
+      color: #000;
+      padding: 15px 40px;
+      font-size: 1.2rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      animation: pulse 1.5s infinite;
+    }
+
+    #restore-button:hover {
+      background-color: #00aaaa;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes flicker {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    @keyframes pulse-border {
+      0% { box-shadow: 0 0 10px #00ffcc; }
+      50% { box-shadow: 0 0 20px #00ffcc; }
+      100% { box-shadow: 0 0 10px #00ffcc; }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .fade-in {
+      animation: fadeIn 2s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">⚠️ Nullshade is taking over the city... ⚠️</h1>
+    <div id="story" class="fade-in">Initializing...</div>
+
+    <div id="images">
+      <img src="villain-image.png" alt="Nullshade" id="villain-img" class="character-img">
+      <img src="hero-image.png" alt="CodeGuardian" id="hero-img" class="character-img hidden">
+    </div>
+
+    <button id="restore-button" class="hidden">🛡️ Restore City</button>
+  </div>
+
+  <script>
+    const storyBox = document.getElementById("story");
+    const title = document.getElementById("title");
+    const restoreButton = document.getElementById("restore-button");
+    const villainImg = document.getElementById("villain-img");
+    const heroImg = document.getElementById("hero-img");
+
+    const storyLines = [
+      "Establishing city uplink...",
+      "Nullshade breach detected...",
+      "⚠️ Nullshade has started encrypting financial institutions.",
+      "💰 Banks are now inaccessible. Civilian transactions halted.",
+      "🚗 Self-driving vehicles hijacked. Nullshade overrides navigation.",
+      "🛰️ Satellites are transmitting corrupted signals.",
+      "📡 Citywide communication jammed by rogue AI extensions.",
+      "🌐 Firewalls collapsing... Nullshade gaining admin-level access.",
+      "🕷️ Nullshade declares: 'This city belongs to the shadows now.'",
+      "[Emergency Protocol] Summoning CodeGuardian...",
+      "...",
+      "✨ CodeGuardian initialized. Preparing counter-hack..."
+    ];
+
+    const restorationLines = [
+      "[CodeGuardian] Restoring encrypted bank systems...",
+      "[CodeGuardian] Reclaiming vehicle networks...",
+      "[CodeGuardian] Reinforcing citywide firewalls...",
+      "[CodeGuardian] Nullshade’s signal weakening...",
+      "[CodeGuardian] Citizens protected. Systems online.",
+      "✅ CITY RESTORED. Nullshade retreating into the Deep Web.",
+      "🎉 Victory: CodeGuardian saves the day!"
+    ];
+
+    let i = 0;
+
+    function typeLine(lines, callback) {
+      if (i >= lines.length) {
+        if (callback) callback();
+        return;
+      }
+      storyBox.innerHTML += lines[i] + "\n";
+      storyBox.scrollTop = storyBox.scrollHeight;
+      i++;
+      setTimeout(() => typeLine(lines, callback), 2000);
+    }
+
+    window.onload = () => {
+      typeLine(storyLines, () => {
+        restoreButton.classList.remove("hidden");
+        heroImg.classList.remove("hidden");
+        title.textContent = "🛡️ CodeGuardian Has Arrived!";
+        title.style.color = "#00ffcc";
+        title.style.textShadow = "0 0 10px #00ffff";
+      });
+    };
+
+    restoreButton.addEventListener("click", () => {
+      storyBox.innerHTML = "[CodeGuardian] Starting countermeasures...\n";
+      i = 0;
+      villainImg.classList.add("hidden");
+      heroImg.classList.remove("hidden");
+      typeLine(restorationLines, () => {
+        title.textContent = "✅ City Restored by CodeGuardian!";
+      });
+    });
+  </script>
+</body>
+</html>
