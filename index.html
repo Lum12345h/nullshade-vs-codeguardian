@@ -1,191 +1,566 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Nullshade vs CodeGuardian</title>
-  <link rel="icon" type="image/x-icon" href="logo_altamira.png">
-  <style>
-    * {
-      box-sizing: border-box;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Nullshade vs CodeGuardian - Interactive Comic</title>
+<link rel="icon" type="image/x-icon" href="logo_altamira.png" />
+<style>
+  /* RESET */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Courier New', Courier, monospace;
+    background-color: #000;
+    color: #00ffcc;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  h1 {
+    margin-top: 20px;
+    font-size: 3rem;
+    text-align: center;
+    text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff;
+    user-select: none;
+  }
+  /* Comic container */
+  #comic-container {
+    position: relative;
+    background-color: #001111;
+    border: 3px solid #00ffcc;
+    border-radius: 14px;
+    width: 90vw;
+    max-width: 720px;
+    min-height: 450px;
+    margin: 20px 0 15px;
+    padding: 25px 30px;
+    box-shadow: 0 0 35px #00ffff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+  }
+  /* Panel styling */
+  .panel {
+    display: flex;
+    gap: 20px;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 25px;
+    left: 30px;
+    right: 30px;
+    bottom: 25px;
+    transition: opacity 0.7s ease-in-out;
+    /* layout */
+    flex-direction: row;
+    align-items: center;
+  }
+  .panel.active {
+    opacity: 1;
+    pointer-events: auto;
+    position: relative;
+  }
+  /* Panel Number Badge */
+  .panel-number {
+    position: absolute;
+    top: 8px;
+    right: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #00ffcc;
+    text-shadow: 0 0 8px #00ffff;
+    user-select: none;
+  }
+  /* Panel Image container */
+  .panel-image {
+    flex: 0 0 45%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  .panel-image img {
+    max-width: 100%;
+    max-height: 350px;
+    border-radius: 12px;
+    box-shadow: 0 0 28px #00ffff;
+    filter: drop-shadow(0 0 10px #00ffff);
+    transition: transform 0.6s ease;
+  }
+  .panel.active .panel-image img {
+    transform: scale(1.07);
+  }
+  /* Loading spinner for images */
+  .loader {
+    border: 4px solid #003333;
+    border-top: 4px solid #00ffcc;
+    border-radius: 50%;
+    width: 45px;
+    height: 45px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% {transform: rotate(0);}
+    100% {transform: rotate(360deg);}
+  }
+  /* Panel Text container */
+  .panel-content {
+    flex: 1 1 55%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #00ffcc;
+    user-select: text;
+  }
+  .character {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    text-shadow: 0 0 10px #00ffff, 0 0 15px #00ffff;
+  }
+  .character.nullshade {
+    color: #ff5555;
+    text-shadow: 0 0 12px #ff0000, 0 0 18px #ff0000;
+  }
+  .character.codeguardian {
+    color: #00ffff;
+    text-shadow: 0 0 15px #00ffff;
+  }
+  .character.citizen {
+    color: #ffff77;
+    text-shadow: 0 0 10px #cccc00;
+  }
+  .dialogue {
+    font-size: 1.3rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    margin-bottom: 12px;
+  }
+  .effect-text {
+    font-style: italic;
+    font-size: 1.05rem;
+    color: #66ffcc;
+    text-shadow: 0 0 8px #00ffcc;
+  }
+  /* Buttons container */
+  #buttons {
+    width: 90vw;
+    max-width: 720px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    user-select: none;
+  }
+  button {
+    background-color: #00ffcc;
+    border: none;
+    padding: 16px 34px;
+    font-size: 1.3rem;
+    font-weight: 700;
+    border-radius: 14px;
+    cursor: pointer;
+    color: #000;
+    box-shadow: 0 0 25px #00ffcc;
+    transition: background-color 0.25s ease;
+  }
+  button:hover:not(:disabled),
+  button:focus-visible {
+    background-color: #00cccc;
+    outline: none;
+    box-shadow: 0 0 35px #00ffff;
+  }
+  button:disabled {
+    background-color: #004d4d;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+  /* Progress Text */
+  #progress-text {
+    color: #00ffcc;
+    font-size: 1.1rem;
+    text-align: center;
+    margin-bottom: 10px;
+    user-select: none;
+  }
+  /* Tip box */
+  #tip-box {
+    width: 90vw;
+    max-width: 720px;
+    background-color: #003333cc;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 1.1rem;
+    color: #00ffccdd;
+    text-align: center;
+    margin-bottom: 35px;
+    user-select: none;
+    box-shadow: 0 0 20px #00ffff88;
+  }
+  /* Responsive adjustments */
+  @media (max-width: 600px) {
+    #comic-container {
+      padding: 18px 20px;
+      min-height: 400px;
     }
-
-    body {
-      margin: 0;
-      background-color: #000;
-      font-family: 'Courier New', monospace;
-      color: #00ffcc;
-      overflow: hidden;
-    }
-
-    .container {
-      padding: 30px;
+    .panel {
+      flex-direction: column;
+      align-items: center;
       text-align: center;
     }
-
-    h1 {
-      font-size: 2rem;
-      text-shadow: 0 0 10px red;
-      margin-bottom: 20px;
-      animation: flicker 2s infinite alternate;
+    .panel-image {
+      flex: 0 0 auto;
+      margin-bottom: 18px;
     }
-
-    #story {
-      width: 80%;
-      margin: 0 auto;
-      font-size: 1.2rem;
-      min-height: 180px;
-      white-space: pre-wrap;
-      border: 2px solid #00ffcc;
-      padding: 20px;
-      background-color: #001111;
-      box-shadow: 0 0 20px #00ffcc;
-      overflow-y: auto;
-      animation: pulse-border 2s infinite;
+    .panel-content {
+      flex: 0 0 auto;
     }
-
-    #images {
-      display: flex;
-      justify-content: space-around;
-      margin-top: 20px;
-      align-items: center;
+    .character {
+      font-size: 1.8rem;
     }
-
-    .character-img {
-      height: 200px;
-      transition: transform 1s ease;
-      filter: drop-shadow(0 0 20px #00ffff);
+    .dialogue {
+      font-size: 1.1rem;
     }
-
-    .character-img:hover {
-      transform: scale(1.1) rotate(2deg);
+    button {
+      padding: 12px 28px;
+      font-size: 1.1rem;
     }
-
-    #restore-button {
-      margin-top: 30px;
-      background-color: #00ffcc;
-      color: #000;
-      padding: 15px 40px;
-      font-size: 1.2rem;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s ease;
-      animation: pulse 1.5s infinite;
-    }
-
-    #restore-button:hover {
-      background-color: #00aaaa;
-    }
-
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    @keyframes flicker {
-      0% { opacity: 1; }
-      50% { opacity: 0.5; }
-      100% { opacity: 1; }
-    }
-
-    @keyframes pulse-border {
-      0% { box-shadow: 0 0 10px #00ffcc; }
-      50% { box-shadow: 0 0 20px #00ffcc; }
-      100% { box-shadow: 0 0 10px #00ffcc; }
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .fade-in {
-      animation: fadeIn 2s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h1 id="title">⚠️ Nullshade is taking over the city... ⚠️</h1>
-    <div id="story" class="fade-in">Initializing...</div>
+  <h1>⚠️ Nullshade vs CodeGuardian ⚠️</h1>
 
-    <div id="images">
-      <img src="villain-image.png" alt="Nullshade" id="villain-img" class="character-img">
-      <img src="hero-image.png" alt="CodeGuardian" id="hero-img" class="character-img hidden">
-    </div>
-
-    <button id="restore-button" class="hidden">🛡️ Restore City</button>
+  <div id="comic-container" aria-live="polite" aria-atomic="true" aria-label="Interactive comic story">
+    <!-- Panels inserted dynamically -->
   </div>
 
-  <script>
-    const storyBox = document.getElementById("story");
-    const title = document.getElementById("title");
-    const restoreButton = document.getElementById("restore-button");
-    const villainImg = document.getElementById("villain-img");
-    const heroImg = document.getElementById("hero-img");
+  <div id="progress-text" aria-live="polite" aria-atomic="true" role="status">Panel 0 / 0</div>
 
-    const storyLines = [
-      "Establishing city uplink...",
-      "Nullshade breach detected...",
-      "⚠️ Nullshade has started encrypting financial institutions.",
-      "💰 Banks are now inaccessible. Civilian transactions halted.",
-      "🚗 Self-driving vehicles hijacked. Nullshade overrides navigation.",
-      "🛰️ Satellites are transmitting corrupted signals.",
-      "📡 Citywide communication jammed by rogue AI extensions.",
-      "🌐 Firewalls collapsing... Nullshade gaining admin-level access.",
-      "🕷️ Nullshade declares: 'This city belongs to the shadows now.'",
-      "[Emergency Protocol] Summoning CodeGuardian...",
-      "...",
-      "✨ CodeGuardian initialized. Preparing counter-hack..."
-    ];
+  <div id="buttons">
+    <button id="start-btn" aria-label="Start the story">▶️ Start Story</button>
+    <button id="prev-btn" aria-label="Go to previous panel" disabled>⬅️ Previous</button>
+    <button id="next-btn" aria-label="Go to next panel" disabled>➡️ Next</button>
+    <button id="restart-btn" aria-label="Restart the story" style="display:none;">🔄 Restart</button>
+  </div>
 
-    const restorationLines = [
-      "[CodeGuardian] Restoring encrypted bank systems...",
-      "[CodeGuardian] Reclaiming vehicle networks...",
-      "[CodeGuardian] Reinforcing citywide firewalls...",
-      "[CodeGuardian] Nullshade’s signal weakening...",
-      "[CodeGuardian] Citizens protected. Systems online.",
-      "✅ CITY RESTORED. Nullshade retreating into the Deep Web.",
-      "🎉 Victory: CodeGuardian saves the day!"
-    ];
+  <div id="tip-box">
+    Tip: Use the buttons or Left/Right arrow keys to navigate through the story, step by step.
+  </div>
 
-    let i = 0;
+<script>
+  /*
+    Nullshade vs CodeGuardian Interactive Comic
+    - Story is shown one panel at a time with fade effect.
+    - Keyboard accessible with arrows for navigation.
+    - Progress indicator shows current panel.
+    - Images show loader animation until loaded.
+    - Buttons enable/disable according to story state.
+    - Nullshade is male.
+    - Code well-commented for easy explanation.
+  */
 
-    function typeLine(lines, callback) {
-      if (i >= lines.length) {
-        if (callback) callback();
-        return;
-      }
-      storyBox.innerHTML += lines[i] + "\n";
-      storyBox.scrollTop = storyBox.scrollHeight;
-      i++;
-      setTimeout(() => typeLine(lines, callback), 2000);
+  // Story data with detailed dialogue, longer but clear
+  const storyPanels = [
+    {
+      character: "Nullshade",
+      imageSrc: "villain-image.png",
+      altText: "Nullshade, the hacker villain",
+      dialogue: "Nullshade, the master hacker, launches his first assault on the city’s banking network. His malicious code encrypts all the data, locking citizens out of their own accounts.\n\"No one moves a dime without my control,\" he threatens, smirking in the shadows.",
+      effect: "🛑 BANKS LOCKED DOWN! Citizens helpless with frozen funds."
+    },
+    {
+      character: "Nullshade",
+      imageSrc: "villain-image.png",
+      altText: "Nullshade controlling traffic systems",
+      dialogue: "Next, Nullshade takes control of the traffic system, turning every traffic light to red and bringing the city's streets to a chaotic halt.\n\"Let's see how they deal with complete paralysis,\" he chuckles darkly.",
+      effect: "🚦 TRAFFIC SYSTEMS HACKED! City gridlock is inevitable."
+    },
+    {
+      character: "Citizen",
+      imageSrc: "hero-image.png",
+      altText: "Worried citizen stuck in traffic",
+      dialogue: "A frustrated citizen shouts, \"My bank is locked, and I’m stuck in traffic for hours! Who can help us?\" The panic spreads across the city streets.",
+      effect: "⚠️ Citizens demand urgent help."
+    },
+    {
+      character: "CodeGuardian",
+      imageSrc: "hero-image.png",
+      altText: "CodeGuardian ready to defend",
+      dialogue: "Just when hope seems lost, CodeGuardian emerges from the digital realm. Clad in glowing code patterns, he promises, \"I will protect this city and defeat Nullshade’s darkness.\"",
+      effect: "✨ CODEGUARDIAN ENTERS THE BATTLE"
+    },
+    {
+      character: "CodeGuardian",
+      imageSrc: "hero-image.png",
+      altText: "CodeGuardian raising shield",
+      dialogue: "CodeGuardian conjures a brilliant pixel shield to block Nullshade’s attacks aimed at the traffic systems.\n\"Your virus won't break through my shield,\" he says confidently.",
+      effect: "🛡️ PIXEL SHIELD ACTIVE"
+    },
+    {
+      character: "Nullshade",
+      imageSrc: "villain-image.png",
+      altText: "Nullshade launching dark code attack",
+      dialogue: "Furious, Nullshade sends waves of malicious JavaScript that darken the city's streets by disabling streetlights.\n\"Try navigating in the dark,\" he sneers.",
+      effect: "🌑 CITY PLUNGED INTO DARKNESS"
+    },
+    {
+      character: "CodeGuardian",
+      imageSrc: "hero-image.png",
+      altText: "CodeGuardian restoring power",
+      dialogue: "CodeGuardian quickly scripts a powerful algorithm to restore power and cleanse the system of malware.\n\"Light will always pierce the darkness,\" he declares.",
+      effect: "⚡ POWER RESTORED TO CITY"
+    },
+    {
+      character: "CodeGuardian",
+      imageSrc: "hero-image.png",
+      altText: "CodeGuardian unleashing ultimate code attack",
+      dialogue: "With a final surge, CodeGuardian unleashes a beam of pure, clean code that purges Nullshade’s virus from the entire system.\n\"This is the end of your reign, Nullshade!\"",
+      effect: "⚡⚡⚡ VIRUS PURGED!"
+    },
+    {
+      character: "Nullshade",
+      imageSrc: "villain-image.png",
+      altText: "Nullshade trapped and defeated",
+      dialogue: "Trapped inside a digital prison, Nullshade snarls, \"You’ve won today, CodeGuardian... but I will return stronger.\"\nThe city breathes a sigh of relief.",
+      effect: "🔒 NULLSHADE CONTAINED"
+    },
+    {
+      character: "Citizen",
+      imageSrc: "hero-image.png",
+      altText: "Citizens celebrating their hero",
+      dialogue: "The people cheer and thank CodeGuardian for saving the city.\n\"Thank you, CodeGuardian! You’re our true protector!\"",
+      effect: "🎉 PEACE RESTORED"
     }
+  ];
 
-    window.onload = () => {
-      typeLine(storyLines, () => {
-        restoreButton.classList.remove("hidden");
-        heroImg.classList.remove("hidden");
-        title.textContent = "🛡️ CodeGuardian Has Arrived!";
-        title.style.color = "#00ffcc";
-        title.style.textShadow = "0 0 10px #00ffff";
-      });
+  // Cache references to DOM elements
+  const comicContainer = document.getElementById('comic-container');
+  const progressText = document.getElementById('progress-text');
+  const startBtn = document.getElementById('start-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const prevBtn = document.getElementById('prev-btn');
+  const restartBtn = document.getElementById('restart-btn');
+
+  // Current active panel index (-1 means story not started)
+  let currentIndex = -1;
+
+  // Holds the DOM elements of each panel for easy access and manipulation
+  const panelElements = [];
+
+  /**
+   * Create DOM panel element for one story panel.
+   * Returns a div with panel class, containing:
+   *  - panel number badge
+   *  - image container with loader that disappears when image loads
+   *  - character name styled
+   *  - dialogue text
+   *  - effect text
+   */
+  function createPanelElement(panel, index) {
+    const panelDiv = document.createElement('div');
+    panelDiv.classList.add('panel');
+    panelDiv.setAttribute('role', 'group');
+    panelDiv.setAttribute('aria-label', `Panel ${index + 1} of ${storyPanels.length}`);
+
+    // Panel number badge
+    const numberBadge = document.createElement('div');
+    numberBadge.classList.add('panel-number');
+    numberBadge.textContent = `${index + 1} / ${storyPanels.length}`;
+    panelDiv.appendChild(numberBadge);
+
+    // Image container with loader spinner
+    const imgContainer = document.createElement('div');
+    imgContainer.classList.add('panel-image');
+
+    const loader = document.createElement('div');
+    loader.classList.add('loader');
+    imgContainer.appendChild(loader);
+
+    const img = document.createElement('img');
+    img.alt = panel.altText || '';
+    img.style.display = 'none'; // Hide image initially
+    img.src = panel.imageSrc;
+    img.loading = "lazy";
+    img.setAttribute('aria-hidden', 'true');
+
+    // When image loaded, remove loader and show image
+    img.onload = () => {
+      loader.style.display = 'none';
+      img.style.display = 'block';
+    };
+    img.onerror = () => {
+      loader.style.borderTopColor = '#ff5555';
+      loader.style.animation = 'none';
+      loader.textContent = 'Image failed to load';
+      img.style.display = 'none';
     };
 
-    restoreButton.addEventListener("click", () => {
-      storyBox.innerHTML = "[CodeGuardian] Starting countermeasures...\n";
-      i = 0;
-      villainImg.classList.add("hidden");
-      heroImg.classList.remove("hidden");
-      typeLine(restorationLines, () => {
-        title.textContent = "✅ City Restored by CodeGuardian!";
-      });
+    imgContainer.appendChild(img);
+    panelDiv.appendChild(imgContainer);
+
+    // Content container for character name, dialogue, effect
+    const contentDiv = document.createElement('div');
+    contentDiv.classList.add('panel-content');
+
+    const characterName = document.createElement('div');
+    characterName.classList.add('character');
+    if (panel.character.toLowerCase() === 'nullshade') {
+      characterName.classList.add('nullshade');
+    } else if (panel.character.toLowerCase() === 'codeguardian') {
+      characterName.classList.add('codeguardian');
+    } else {
+      characterName.classList.add('citizen');
+    }
+    characterName.textContent = panel.character;
+
+    const dialogueText = document.createElement('div');
+    dialogueText.classList.add('dialogue');
+    dialogueText.textContent = panel.dialogue;
+
+    const effectText = document.createElement('div');
+    effectText.classList.add('effect-text');
+    effectText.textContent = panel.effect || '';
+
+    contentDiv.appendChild(characterName);
+    contentDiv.appendChild(dialogueText);
+    contentDiv.appendChild(effectText);
+
+    panelDiv.appendChild(contentDiv);
+
+    return panelDiv;
+  }
+
+  /**
+   * Initialize all panels by creating their DOM elements and adding to container (hidden by default).
+   */
+  function initializePanels() {
+    comicContainer.innerHTML = ''; // clear any existing content
+    panelElements.length = 0;
+
+    for (let i = 0; i < storyPanels.length; i++) {
+      const panelEl = createPanelElement(storyPanels[i], i);
+      comicContainer.appendChild(panelEl);
+      panelElements.push(panelEl);
+    }
+  }
+
+  /**
+   * Show panel at given index with fade transition.
+   * Hide all others.
+   * Update progress text and buttons states.
+   */
+  function showPanel(index) {
+    if (index < 0 || index >= storyPanels.length) return;
+
+    // Hide all panels, show only active
+    panelElements.forEach((panel, i) => {
+      if (i === index) {
+        panel.classList.add('active');
+      } else {
+        panel.classList.remove('active');
+      }
     });
-  </script>
+
+    currentIndex = index;
+
+    // Update progress text
+    progressText.textContent = `Panel ${currentIndex + 1} / ${storyPanels.length}`;
+
+    // Button state management
+    prevBtn.disabled = (currentIndex === 0);
+    nextBtn.disabled = (currentIndex === storyPanels.length - 1);
+
+    // Show restart only at the end
+    if (currentIndex === storyPanels.length - 1) {
+      nextBtn.style.display = 'none';
+      restartBtn.style.display = 'inline-block';
+    } else {
+      nextBtn.style.display = 'inline-block';
+      restartBtn.style.display = 'none';
+    }
+  }
+
+  /**
+   * Start story from beginning.
+   * Disable start button, enable next/prev accordingly.
+   */
+  function startStory() {
+    startBtn.disabled = true;
+    prevBtn.disabled = true;
+    nextBtn.disabled = false;
+    restartBtn.style.display = 'none';
+
+    initializePanels();
+    showPanel(0);
+  }
+
+  /**
+   * Go to next panel if possible.
+   */
+  function nextPanel() {
+    if (currentIndex < storyPanels.length - 1) {
+      showPanel(currentIndex + 1);
+    }
+  }
+
+  /**
+   * Go to previous panel if possible.
+   */
+  function prevPanel() {
+    if (currentIndex > 0) {
+      showPanel(currentIndex - 1);
+    }
+  }
+
+  /**
+   * Restart the story - resets buttons and goes back to initial state.
+   */
+  function restartStory() {
+    currentIndex = -1;
+    comicContainer.innerHTML = '';
+    progressText.textContent = 'Panel 0 / 0';
+
+    startBtn.disabled = false;
+    prevBtn.disabled = true;
+    nextBtn.disabled = true;
+    restartBtn.style.display = 'none';
+  }
+
+  // Event listeners for buttons
+  startBtn.addEventListener('click', () => {
+    startStory();
+  });
+  nextBtn.addEventListener('click', () => {
+    nextPanel();
+  });
+  prevBtn.addEventListener('click', () => {
+    prevPanel();
+  });
+  restartBtn.addEventListener('click', () => {
+    restartStory();
+  });
+
+  // Keyboard support for left/right arrows to navigate
+  window.addEventListener('keydown', (e) => {
+    if (currentIndex === -1) return; // story not started
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      nextPanel();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      prevPanel();
+    }
+  });
+
+  // Initialize page in initial state (story not started)
+  restartStory();
+</script>
 </body>
 </html>
