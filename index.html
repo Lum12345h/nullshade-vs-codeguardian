@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Nullshade vs CodeGuardian - Interactive Comic</title>
+<!-- Ensure logo_altamira.png is in the same directory or provide the correct path -->
 <link rel="icon" type="image/x-icon" href="logo_altamira.png" />
 <style>
   /* RESET */
@@ -20,6 +21,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding-bottom: 40px; /* Add some space at the bottom */
   }
   h1 {
     margin-top: 20px;
@@ -30,20 +32,20 @@
   }
   /* Comic container */
   #comic-container {
-    position: relative;
+    position: relative; /* Needed for absolute positioning of non-active panels */
     background-color: #001111;
     border: 3px solid #00ffcc;
     border-radius: 14px;
     width: 90vw;
     max-width: 720px;
-    min-height: 450px;
+    min-height: 450px; /* Give it a fixed minimum height to prevent layout shifts */
     margin: 20px 0 15px;
     padding: 25px 30px;
     box-shadow: 0 0 35px #00ffff;
-    display: flex;
+    display: flex; /* Use flexbox for layout within the active panel */
     flex-direction: column;
     justify-content: center;
-    overflow: hidden;
+    overflow: hidden; /* Hide panels positioned outside */
   }
   /* Panel styling */
   .panel {
@@ -51,21 +53,36 @@
     gap: 20px;
     opacity: 0;
     pointer-events: none;
-    position: absolute;
-    top: 25px;
-    left: 30px;
-    right: 30px;
-    bottom: 25px;
+    position: absolute; /* Position non-active panels absolutely */
+    top: 0; /* Adjust positioning to be relative to container padding */
+    left: 0;
+    width: 100%; /* Make absolute panels fill container width */
+    height: 100%; /* Make absolute panels fill container height */
+    padding: 25px 30px; /* Apply padding here as container padding won't affect absolute children */
+    box-sizing: border-box; /* Include padding in width/height */
     transition: opacity 0.7s ease-in-out;
     /* layout */
     flex-direction: row;
     align-items: center;
+    justify-content: space-between; /* Space out image and content */
   }
   .panel.active {
     opacity: 1;
     pointer-events: auto;
-    position: relative;
+    position: relative; /* Make active panel relative to be in flow */
+    padding: 0; /* Remove padding on active panel, apply to children if needed (already done inside children) */
+    /* When active, the panel itself dictates the flex layout */
+    flex-direction: row; /* Default layout for active */
+    align-items: center;
+    justify-content: space-between;
   }
+
+  /* Ensure inner elements maintain correct spacing and padding */
+  .panel-image, .panel-content {
+    padding: 0; /* Reset any potential padding from the parent .panel */
+  }
+
+
   /* Panel Number Badge */
   .panel-number {
     position: absolute;
@@ -76,26 +93,38 @@
     color: #00ffcc;
     text-shadow: 0 0 8px #00ffff;
     user-select: none;
+    z-index: 1; /* Ensure it's above content */
   }
   /* Panel Image container */
   .panel-image {
-    flex: 0 0 45%;
+    flex: 0 0 45%; /* Fixed base size */
+    max-width: 45%; /* Allow shrinking */
     display: flex;
     justify-content: center;
     align-items: center;
     position: relative;
+    min-height: 150px; /* Give image container a minimum height */
   }
   .panel-image img {
+    display: none; /* Hide image initially, shown by JS on load */
     max-width: 100%;
-    max-height: 350px;
+    max-height: 350px; /* Limit max height */
+    width: auto; /* Maintain aspect ratio */
+    height: auto; /* Maintain aspect ratio */
     border-radius: 12px;
     box-shadow: 0 0 28px #00ffff;
     filter: drop-shadow(0 0 10px #00ffff);
     transition: transform 0.6s ease;
   }
   .panel.active .panel-image img {
-    transform: scale(1.07);
+    transform: scale(1.05); /* Slightly smaller scale on active */
   }
+   @media (min-width: 601px) { /* Apply subtle zoom on larger screens */
+      .panel.active .panel-image img:not(.loading) { /* Apply only when not loading */
+         transform: scale(1.07);
+      }
+   }
+
   /* Loading spinner for images */
   .loader {
     border: 4px solid #003333;
@@ -104,14 +133,32 @@
     width: 45px;
     height: 45px;
     animation: spin 1s linear infinite;
+    position: absolute; /* Center spinner over image area */
+    top: 50%;
+    left: 50%;
+    margin-top: -22.5px; /* Half of height */
+    margin-left: -22.5px; /* Half of width */
+    display: flex; /* Use flex to center text if needed */
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #ff5555; /* For error text */
+    text-align: center;
+    padding: 5px;
+    word-break: break-word;
   }
+   .loader.error {
+      border-top-color: #ff5555;
+      animation: none;
+   }
   @keyframes spin {
     0% {transform: rotate(0);}
     100% {transform: rotate(360deg);}
   }
   /* Panel Text container */
   .panel-content {
-    flex: 1 1 55%;
+    flex: 1 1 55%; /* Grow/shrink to fill remaining space */
+    max-width: 55%; /* Allow shrinking */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -157,6 +204,7 @@
     gap: 15px;
     margin-bottom: 15px;
     user-select: none;
+    flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
   }
   button {
     background-color: #00ffcc;
@@ -169,6 +217,8 @@
     color: #000;
     box-shadow: 0 0 25px #00ffcc;
     transition: background-color 0.25s ease;
+    min-width: 120px; /* Ensure buttons have minimum width */
+    text-align: center;
   }
   button:hover:not(:disabled),
   button:focus-visible {
@@ -205,31 +255,62 @@
   }
   /* Responsive adjustments */
   @media (max-width: 600px) {
+    h1 {
+        font-size: 2rem;
+    }
     #comic-container {
-      padding: 18px 20px;
-      min-height: 400px;
+      padding: 18px 20px; /* Adjust padding for small screens */
+      min-height: 350px; /* Adjust min height */
     }
     .panel {
-      flex-direction: column;
+      flex-direction: column; /* Stack image and text vertically */
       align-items: center;
       text-align: center;
+      padding: 18px 20px; /* Apply small screen padding to absolute panels */
+    }
+    .panel.active {
+       flex-direction: column; /* Stack active panel content */
+       padding: 0; /* Remove panel padding */
     }
     .panel-image {
-      flex: 0 0 auto;
+      flex: 0 0 auto; /* No fixed flex basis */
+      max-width: 100%; /* Use full width */
       margin-bottom: 18px;
+      min-height: 100px; /* Smaller min height on mobile */
+    }
+    .panel-image img {
+        max-height: 250px; /* Reduce max image height on mobile */
     }
     .panel-content {
-      flex: 0 0 auto;
+      flex: 0 0 auto; /* No fixed flex basis */
+      max-width: 100%; /* Use full width */
     }
     .character {
       font-size: 1.8rem;
+      margin-bottom: 10px;
     }
     .dialogue {
       font-size: 1.1rem;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+    .effect-text {
+       font-size: 1rem;
     }
     button {
-      padding: 12px 28px;
-      font-size: 1.1rem;
+      padding: 12px 20px; /* Adjust button padding */
+      font-size: 1rem;
+      min-width: 100px;
+    }
+    #buttons {
+       gap: 10px; /* Reduce gap between buttons */
+    }
+    #progress-text {
+       font-size: 1rem;
+    }
+    #tip-box {
+       font-size: 0.9rem;
+       padding: 10px 15px;
     }
   }
 </style>
@@ -258,9 +339,11 @@
   /*
     Nullshade vs CodeGuardian Interactive Comic
     - Story is shown one panel at a time with fade effect.
+    - Manual lazy loading implemented for images: loads only when panel becomes active.
+    - Pre-loads the next image for smoother transitions.
+    - Includes loading spinner and error handling for images.
     - Keyboard accessible with arrows for navigation.
     - Progress indicator shows current panel.
-    - Images show loader animation until loaded.
     - Buttons enable/disable according to story state.
     - Nullshade is male.
     - Code well-commented for easy explanation.
@@ -277,14 +360,14 @@
     },
     {
       character: "Nullshade",
-      imageSrc: "villain-image.png",
+      imageSrc: "villain-image.png", // Assuming same image but conceptually different scene
       altText: "Nullshade controlling traffic systems",
       dialogue: "Next, Nullshade takes control of the traffic system, turning every traffic light to red and bringing the city's streets to a chaotic halt.\n\"Let's see how they deal with complete paralysis,\" he chuckles darkly.",
       effect: "🚦 TRAFFIC SYSTEMS HACKED! City gridlock is inevitable."
     },
     {
       character: "Citizen",
-      imageSrc: "hero-image.png",
+      imageSrc: "hero-image.png", // Assuming hero image for citizen perspective
       altText: "Worried citizen stuck in traffic",
       dialogue: "A frustrated citizen shouts, \"My bank is locked, and I’m stuck in traffic for hours! Who can help us?\" The panic spreads across the city streets.",
       effect: "⚠️ Citizens demand urgent help."
@@ -298,42 +381,42 @@
     },
     {
       character: "CodeGuardian",
-      imageSrc: "hero-image.png",
+      imageSrc: "hero-image.png", // Assuming same image
       altText: "CodeGuardian raising shield",
       dialogue: "CodeGuardian conjures a brilliant pixel shield to block Nullshade’s attacks aimed at the traffic systems.\n\"Your virus won't break through my shield,\" he says confidently.",
       effect: "🛡️ PIXEL SHIELD ACTIVE"
     },
     {
       character: "Nullshade",
-      imageSrc: "villain-image.png",
+      imageSrc: "villain-image.png", // Assuming same image
       altText: "Nullshade launching dark code attack",
       dialogue: "Furious, Nullshade sends waves of malicious JavaScript that darken the city's streets by disabling streetlights.\n\"Try navigating in the dark,\" he sneers.",
       effect: "🌑 CITY PLUNGED INTO DARKNESS"
     },
     {
       character: "CodeGuardian",
-      imageSrc: "hero-image.png",
+      imageSrc: "hero-image.png", // Assuming same image
       altText: "CodeGuardian restoring power",
       dialogue: "CodeGuardian quickly scripts a powerful algorithm to restore power and cleanse the system of malware.\n\"Light will always pierce the darkness,\" he declares.",
       effect: "⚡ POWER RESTORED TO CITY"
     },
     {
       character: "CodeGuardian",
-      imageSrc: "hero-image.png",
+      imageSrc: "hero-image.png", // Assuming same image
       altText: "CodeGuardian unleashing ultimate code attack",
       dialogue: "With a final surge, CodeGuardian unleashes a beam of pure, clean code that purges Nullshade’s virus from the entire system.\n\"This is the end of your reign, Nullshade!\"",
       effect: "⚡⚡⚡ VIRUS PURGED!"
     },
     {
       character: "Nullshade",
-      imageSrc: "villain-image.png",
+      imageSrc: "villain-image.png", // Assuming same image
       altText: "Nullshade trapped and defeated",
       dialogue: "Trapped inside a digital prison, Nullshade snarls, \"You’ve won today, CodeGuardian... but I will return stronger.\"\nThe city breathes a sigh of relief.",
       effect: "🔒 NULLSHADE CONTAINED"
     },
     {
       character: "Citizen",
-      imageSrc: "hero-image.png",
+      imageSrc: "hero-image.png", // Assuming hero image for citizen perspective
       altText: "Citizens celebrating their hero",
       dialogue: "The people cheer and thank CodeGuardian for saving the city.\n\"Thank you, CodeGuardian! You’re our true protector!\"",
       effect: "🎉 PEACE RESTORED"
@@ -355,10 +438,40 @@
   const panelElements = [];
 
   /**
+   * Handles image loading success. Hides loader, shows image.
+   */
+  function handleImageLoad(event) {
+     const img = event.target;
+     const imgContainer = img.closest('.panel-image');
+     const loader = imgContainer.querySelector('.loader');
+
+     loader.style.display = 'none';
+     img.style.display = 'block';
+     img.classList.remove('loading'); // Remove loading class
+  }
+
+   /**
+    * Handles image loading error. Shows error state on loader.
+    */
+   function handleImageError(event) {
+      const img = event.target;
+      const imgContainer = img.closest('.panel-image');
+      const loader = imgContainer.querySelector('.loader');
+
+      img.style.display = 'none'; // Ensure image is hidden
+      loader.style.display = 'flex'; // Ensure loader is visible
+      loader.classList.add('error'); // Add error class for styling
+      loader.textContent = 'Load Failed'; // Show error text
+      img.classList.remove('loading'); // Remove loading class
+      console.error('Failed to load image:', img.dataset.src); // Log the error
+   }
+
+
+  /**
    * Create DOM panel element for one story panel.
    * Returns a div with panel class, containing:
    *  - panel number badge
-   *  - image container with loader that disappears when image loads
+   *  - image container with loader (image src is *not* set here)
    *  - character name styled
    *  - dialogue text
    *  - effect text
@@ -381,26 +494,20 @@
 
     const loader = document.createElement('div');
     loader.classList.add('loader');
+    // Initially hide loader, show it when load is initiated
+    loader.style.display = 'none';
     imgContainer.appendChild(loader);
 
     const img = document.createElement('img');
-    img.alt = panel.altText || '';
-    img.style.display = 'none'; // Hide image initially
-    img.src = panel.imageSrc;
-    img.loading = "lazy";
-    img.setAttribute('aria-hidden', 'true');
+    // Store image source and alt text in data attributes
+    img.dataset.src = panel.imageSrc;
+    img.dataset.alt = panel.altText || '';
+    // img.src is NOT set here
+    img.alt = ''; // Initially empty alt text, set when loaded
 
-    // When image loaded, remove loader and show image
-    img.onload = () => {
-      loader.style.display = 'none';
-      img.style.display = 'block';
-    };
-    img.onerror = () => {
-      loader.style.borderTopColor = '#ff5555';
-      loader.style.animation = 'none';
-      loader.textContent = 'Image failed to load';
-      img.style.display = 'none';
-    };
+    // Add load/error listeners (these will be attached once per image element)
+    img.addEventListener('load', handleImageLoad);
+    img.addEventListener('error', handleImageError);
 
     imgContainer.appendChild(img);
     panelDiv.appendChild(imgContainer);
@@ -411,14 +518,18 @@
 
     const characterName = document.createElement('div');
     characterName.classList.add('character');
-    if (panel.character.toLowerCase() === 'nullshade') {
-      characterName.classList.add('nullshade');
-    } else if (panel.character.toLowerCase() === 'codeguardian') {
-      characterName.classList.add('codeguardian');
-    } else {
-      characterName.classList.add('citizen');
+    // Apply character-specific classes
+    if (panel.character) {
+        const charClass = panel.character.toLowerCase().replace(/\s+/g, ''); // 'CodeGuardian' -> 'codeguardian'
+         if (charClass === 'nullshade') {
+            characterName.classList.add('nullshade');
+         } else if (charClass === 'codeguardian') {
+            characterName.classList.add('codeguardian');
+         } else {
+            characterName.classList.add('citizen'); // Default for other characters
+         }
     }
-    characterName.textContent = panel.character;
+    characterName.textContent = panel.character || 'Narrator'; // Default if character is missing
 
     const dialogueText = document.createElement('div');
     dialogueText.classList.add('dialogue');
@@ -430,7 +541,10 @@
 
     contentDiv.appendChild(characterName);
     contentDiv.appendChild(dialogueText);
-    contentDiv.appendChild(effectText);
+    if (panel.effect) { // Only add effect element if effect text exists
+      contentDiv.appendChild(effectText);
+    }
+
 
     panelDiv.appendChild(contentDiv);
 
@@ -442,7 +556,7 @@
    */
   function initializePanels() {
     comicContainer.innerHTML = ''; // clear any existing content
-    panelElements.length = 0;
+    panelElements.length = 0; // Clear the array
 
     for (let i = 0; i < storyPanels.length; i++) {
       const panelEl = createPanelElement(storyPanels[i], i);
@@ -452,21 +566,85 @@
   }
 
   /**
+   * Initiates loading of an image for a specific panel if it hasn't started yet.
+   */
+   function loadImageForPanel(index) {
+      if (index < 0 || index >= panelElements.length) return;
+
+      const panelEl = panelElements[index];
+      const img = panelEl.querySelector('.panel-image img');
+      const loader = panelEl.querySelector('.panel-image .loader');
+      const src = img.dataset.src;
+
+      // If src is already set, image loading has started or completed
+      if (img.src === src || img.src === window.location.href + '/' + src) { // Check for both relative and absolute src after load
+         // Image is already loading or loaded. Check current state:
+         if (img.style.display !== 'block' && !loader.classList.contains('error')) {
+             // If image isn't shown and no error, keep loader visible
+             loader.style.display = 'flex';
+         } else if (img.style.display === 'block') {
+             // If image is shown, hide loader
+             loader.style.display = 'none';
+         }
+         return; // Already initiated
+      }
+
+      // Reset loader state for a new attempt if needed (e.g., after restart)
+      loader.style.display = 'flex';
+      loader.classList.remove('error');
+      loader.style.animation = 'spin 1s linear infinite';
+      loader.textContent = '';
+      img.style.display = 'none'; // Ensure image is hidden while loading
+      img.alt = ''; // Clear alt until load success
+      img.classList.add('loading'); // Add loading class
+
+      // Set the src attribute to start loading
+      img.src = src;
+      img.alt = img.dataset.alt; // Set alt text as soon as load starts (better accessibility)
+
+      // The load/error handlers attached in createPanelElement will manage spinner/image visibility
+   }
+
+
+  /**
    * Show panel at given index with fade transition.
    * Hide all others.
    * Update progress text and buttons states.
+   * Initiates image loading for the current and next panel.
    */
   function showPanel(index) {
-    if (index < 0 || index >= storyPanels.length) return;
+    if (index < 0 || index >= storyPanels.length) {
+        console.warn(`Attempted to show invalid panel index: ${index}`);
+        return;
+    }
 
     // Hide all panels, show only active
     panelElements.forEach((panel, i) => {
       if (i === index) {
         panel.classList.add('active');
+        // Ensure active panel is visible
+        panel.style.display = 'flex'; // Use flex when active
+        panel.setAttribute('aria-hidden', 'false');
       } else {
         panel.classList.remove('active');
+        // Hide non-active panels visually and from screen readers
+        // Delay display: none slightly to allow fade-out transition
+        panel.style.display = 'none';
+        // A better way for accessibility might be aria-hidden="true"
+        // panel.setAttribute('aria-hidden', 'true');
       }
     });
+
+    // For screen readers, announce the new panel content after transition
+     setTimeout(() => {
+        const activePanel = panelElements[index];
+        // Announce character, dialogue, and effect using aria-live on container
+        const announcement = `${activePanel.querySelector('.character').textContent}. ${activePanel.querySelector('.dialogue').textContent}${activePanel.querySelector('.effect-text') ? '. ' + activePanel.querySelector('.effect-text').textContent : ''}`;
+        // We are already using aria-live on the container, so no need for extra announcement element
+        // The content change in the active panel should be announced automatically.
+        // Let's ensure the container is focused or has appropriate aria attributes if needed.
+        // The current aria-live="polite" on #comic-container is generally sufficient.
+     }, 800); // Match or slightly exceed transition duration
 
     currentIndex = index;
 
@@ -485,20 +663,34 @@
       nextBtn.style.display = 'inline-block';
       restartBtn.style.display = 'none';
     }
+
+    // --- Manual Lazy Loading & Pre-loading ---
+    // Load the image for the current panel
+    loadImageForPanel(currentIndex);
+
+    // Pre-load the image for the next panel
+    if (currentIndex < storyPanels.length - 1) {
+        loadImageForPanel(currentIndex + 1);
+    }
+    // ---------------------------------------
   }
 
   /**
    * Start story from beginning.
    * Disable start button, enable next/prev accordingly.
+   * Initializes panels and shows the first one.
    */
   function startStory() {
-    startBtn.disabled = true;
-    prevBtn.disabled = true;
-    nextBtn.disabled = false;
-    restartBtn.style.display = 'none';
+    startBtn.style.display = 'none'; // Hide start button
+    prevBtn.style.display = 'inline-block'; // Show other buttons
+    nextBtn.style.display = 'inline-block';
+    restartBtn.style.display = 'none'; // Ensure restart is hidden initially
 
-    initializePanels();
-    showPanel(0);
+    prevBtn.disabled = true; // First panel has no previous
+    nextBtn.disabled = false; // Can always go next from first panel (unless it's the only one)
+
+    initializePanels(); // Create all panel elements
+    showPanel(0); // Show the first panel
   }
 
   /**
@@ -523,14 +715,21 @@
    * Restart the story - resets buttons and goes back to initial state.
    */
   function restartStory() {
-    currentIndex = -1;
-    comicContainer.innerHTML = '';
-    progressText.textContent = 'Panel 0 / 0';
+    currentIndex = -1; // Reset index
+    comicContainer.innerHTML = ''; // Clear panels from DOM
+    panelElements.length = 0; // Clear array reference
 
-    startBtn.disabled = false;
-    prevBtn.disabled = true;
-    nextBtn.disabled = true;
+    progressText.textContent = 'Panel 0 / 0'; // Reset progress
+
+    // Reset button visibility and state
+    startBtn.style.display = 'inline-block'; // Show start button
+    prevBtn.style.display = 'inline-block'; // Keep others visible but disabled
+    nextBtn.style.display = 'inline-block';
     restartBtn.style.display = 'none';
+
+    startBtn.disabled = false; // Enable start
+    prevBtn.disabled = true; // Disable prev/next
+    nextBtn.disabled = true;
   }
 
   // Event listeners for buttons
@@ -549,18 +748,38 @@
 
   // Keyboard support for left/right arrows to navigate
   window.addEventListener('keydown', (e) => {
+    // Don't navigate if focus is inside a text input or similar element
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+        return;
+    }
+
     if (currentIndex === -1) return; // story not started
-    if (e.key === 'ArrowRight' || e.key === ' ') {
-      e.preventDefault();
-      nextPanel();
+
+    if (e.key === 'ArrowRight' || e.key === ' ') { // Use space for next panel too
+      if (!nextBtn.disabled) {
+         e.preventDefault();
+         nextPanel();
+      } else if (restartBtn.style.display !== 'none') {
+          // If at the end and restart button is visible, space can restart
+          e.preventDefault();
+          restartStory();
+      }
     } else if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      prevPanel();
+      if (!prevBtn.disabled) {
+         e.preventDefault();
+         prevPanel();
+      }
     }
   });
 
   // Initialize page in initial state (story not started)
-  restartStory();
+  // Buttons are already in correct state in HTML
+  // Ensure initial button display is correct on load
+  startBtn.style.display = 'inline-block';
+  prevBtn.style.display = 'inline-block';
+  nextBtn.style.display = 'inline-block';
+  restartBtn.style.display = 'none';
+  progressText.textContent = 'Click Start to Begin'; // Initial state text
 </script>
 </body>
 </html>
